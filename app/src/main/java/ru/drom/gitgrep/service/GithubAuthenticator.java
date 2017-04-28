@@ -8,9 +8,6 @@ import android.accounts.NetworkErrorException;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.widget.Toast;
 
 import ru.drom.gitgrep.AppPrefs;
 import ru.drom.gitgrep.AuthActivity;
@@ -18,8 +15,10 @@ import ru.drom.gitgrep.R;
 import ru.drom.gitgrep.util.Utils;
 
 public final class GithubAuthenticator extends AbstractAccountAuthenticator {
-    public static final String ACCOUNT_TYPE = "ru.drom.gitgrep";
-    public static final String AUTH_TOKEN_TYPE = "gitgrep_auth_default";
+    public static final String GITGREP_ACCOUNT_TYPE = "ru.drom.gitgrep";
+    public static final String AUTH_TOKEN_ANY = "gitgrep_any";
+    public static final String TOKEN_TYPE = "token_type";
+    public static final String TOKEN_BASIC = "basic";
 
     public static final String EXTRA_SILENT = "silent";
 
@@ -41,7 +40,7 @@ public final class GithubAuthenticator extends AbstractAccountAuthenticator {
 
         transport.putParcelable(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE, response);
 
-        final Account[] existingAccounts = am.getAccountsByType(ACCOUNT_TYPE);
+        final Account[] existingAccounts = am.getAccountsByType(GITGREP_ACCOUNT_TYPE);
 
         transport.putParcelableArray(AccountManager.KEY_ACCOUNTS, existingAccounts);
 
@@ -95,7 +94,6 @@ public final class GithubAuthenticator extends AbstractAccountAuthenticator {
         }
 
         result.putString(AccountManager.KEY_AUTHTOKEN, token);
-
         return result;
     }
 

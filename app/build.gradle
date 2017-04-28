@@ -47,4 +47,5 @@ dependencies {
     compile 'com.carrotsearch:hppc:0.7.1'
     compile 'com.android.support:recyclerview-v7:25.1.0'
     compile 'net.openhft:zero-allocation-hashing:0.8'
+    compile 'com.android.support:design:25.0.1'
 }

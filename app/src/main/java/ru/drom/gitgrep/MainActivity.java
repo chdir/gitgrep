@@ -1,14 +1,16 @@
 package ru.drom.gitgrep;
 
 import android.accounts.Account;
-import android.app.Activity;
+import android.accounts.AccountManager;
+import android.accounts.OperationCanceledException;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.res.Resources;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.widget.RecyclerView;
-import android.text.Editable;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.LinearLayout;
@@ -32,7 +34,10 @@ import ru.drom.gitgrep.view.SearchLayoutManager;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
-public final class MainActivity extends Activity implements SearchLayout.SearchListener {
+import static ru.drom.gitgrep.service.GithubAuthenticator.GITGREP_ACCOUNT_TYPE;
+import static ru.drom.gitgrep.service.GithubAuthenticator.AUTH_TOKEN_ANY;
+
+public final class MainActivity extends BaseActivity implements SearchLayout.SearchListener, MenuItemCompat.OnActionExpandListener {
     private static final String TAG = "MainActivity";
 
     private PublishSubject<ActivityEvent> lifecycle;
@@ -69,7 +74,11 @@ public final class MainActivity extends Activity implements SearchLayout.SearchL
             state.bitmapCaches = new Bitmaps(res);
         }
 
-        RxAndroid.requireAccountWithAuthToken(this, GithubAuthenticator.ACCOUNT_TYPE, GithubAuthenticator.AUTH_TOKEN_TYPE)
+        ensureAuthenticated();
+    }
+
+    private void ensureAuthenticated() {
+        RxAndroid.requireAccountWithAuthToken(this, GITGREP_ACCOUNT_TYPE, AUTH_TOKEN_ANY)
                 .subscribeOn(RxAndroid.bgLooperThread())
                 .observeOn(RxAndroid.mainThread())
                 .compose(RxLifecycle.bindUntilActivityEvent(lifecycle, ActivityEvent.DESTROY))
@@ -92,15 +101,67 @@ public final class MainActivity extends Activity implements SearchLayout.SearchL
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
 
-        MenuItem searchItem = menu.findItem(R.id.menu_main_search);
+        final MenuItem searchItem = menu.findItem(R.id.menu_main_search);
 
-        searchItem.setEnabled(ready);
+        MenuItemCompat.setOnActionExpandListener(searchItem, this);
 
         final SearchLayout searchView = (SearchLayout) searchItem.getActionView();
 
         searchView.setSearchListener(this);
 
         return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        final MenuItem searchItem = menu.findItem(R.id.menu_main_search);
+
+        searchItem.setEnabled(ready);
+
+        final MenuItem logout = menu.findItem(R.id.menu_main_logout);
+        final MenuItem login = menu.findItem(R.id.menu_main_login);
+
+        final boolean anon = AppPrefs.isAnonymousByChoice(this);
+
+        login.setVisible(anon);
+        logout.setVisible(!anon);
+
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_main_logout:
+            case R.id.menu_main_login:
+                logout();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private void logout() {
+        AppPrefs.setAnonymousByChoice(this, false);
+
+        final AccountManager am = AccountManager.get(this);
+
+        final Account[] account = am.getAccountsByType(GithubAuthenticator.GITGREP_ACCOUNT_TYPE);
+
+        if (account.length == 0) {
+            ensureAuthenticated();
+
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+            am.removeAccountExplicitly(account[0]);
+
+            ensureAuthenticated();
+        } else {
+            am.removeAccount(account[0], future -> ensureAuthenticated(), null);
+        }
     }
 
     @Override
@@ -114,9 +175,15 @@ public final class MainActivity extends Activity implements SearchLayout.SearchL
     }
 
     private void handleSignInError(Throwable error) {
-        Utils.logError(appContext, error);
+        if (AppPrefs.isAnonymousByChoice(this)) {
+            proceedWithStartup(null);
+        } else {
+            if (!(error instanceof OperationCanceledException)) {
+                Utils.logError(this, error);
+            }
 
-        finish();
+            finish();
+        }
     }
 
     @Override
@@ -166,6 +233,18 @@ public final class MainActivity extends Activity implements SearchLayout.SearchL
         } else {
             state.listAdapter.setQuery(new MainActivity.RowFetcher(appContext, query.toString()));
         }
+    }
+
+    @Override
+    public boolean onMenuItemActionExpand(MenuItem item) {
+        item.getActionView().requestFocus();
+
+        return true;
+    }
+
+    @Override
+    public boolean onMenuItemActionCollapse(MenuItem item) {
+        return true;
     }
 
     private static class State {

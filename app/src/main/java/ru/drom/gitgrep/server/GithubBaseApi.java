@@ -11,6 +11,9 @@ import javax.ws.rs.Produces;
 @SocketTimeout(10000)
 @ConnectionTimeout(6000)
 public interface GithubBaseApi {
+    String ERR_DENIED = "access_denied";
+    String ERR_SUSPENDED = "application_suspended";
+
     String HAZARD = "273bf87d19039a6e2246b88856403f52fe6eede0";
 
     String AUTH_API = "ru.dom.gitgrep.services.AUTH";

@@ -24,6 +24,12 @@ public final class AppPrefs {
         return prefs.getBoolean(PREFS_ANONYMOUS, false);
     }
 
+    public static void setAnonymousByChoice(Context context, boolean anon) {
+        final SharedPreferences prefs = getSharedPreferences(context);
+
+        prefs.edit().putBoolean(PREFS_ANONYMOUS, anon).apply();
+    }
+
     public static boolean isStoringPassword(Context context) {
         final SharedPreferences prefs = getSharedPreferences(context);
 

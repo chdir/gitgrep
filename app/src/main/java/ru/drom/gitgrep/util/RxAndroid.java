@@ -65,6 +65,7 @@ public final class RxAndroid {
     public static Observable<Account> requireAccountWithAuthToken(
             @NonNull Activity activity, @NonNull String accountType, @NonNull String authTokenType) {
         return requireAccount(new OnSubscribeAddAccount.Builder(activity, accountType))
+                .first()
                 .lift(new EnsureAuthTokenOperator(activity, authTokenType));
     }
 

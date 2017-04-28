@@ -5,9 +5,13 @@
     <string name="use_anonymously">Анонимное использование</string>
     <string name="rate_limit_notice">Github разрешает анонимным пользователям не более 10 поисковых запросов в минуту с одного IP</string>
     <string name="pick_auth_type_notice">Выберите способ входа или продолжите без авторизации</string>
-    <string name="enter_search_terms">Введите поисковое вырпжение</string>
+    <string name="enter_search_terms">Введите запрос</string>
     <string name="search">Поиск</string>
     <string name="authors_avatar">Аватар владельца репозитория</string>
     <string name="auth">Авторизоваться</string>
     <string name="deauth">Выйти</string>
+    <string name="enter_name">Логин</string>
+    <string name="enter_token">Токен/пароль</string>
+    <string name="auth_err_app_banned">Авторизация по паролю временно недоступна, пожалуйста используйте другие опции</string>
+    <string name="auth_err_unknown">Ошибка авторизации (подробности добавлены в LogCat)</string>
 </resources>
