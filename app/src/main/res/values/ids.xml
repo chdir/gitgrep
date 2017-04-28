@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="req_auth" type="id" />
+    <item name="holder_progress" type="id" />
+    <item name="holder_default" type="id" />
+</resources>

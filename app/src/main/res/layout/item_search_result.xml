@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="82sp"
+    android:padding="6dip"
+    tools:ignore="RtlHardcoded"
+    >
+
+    <ImageView
+        android:id="@android:id/icon"
+        android:layout_width="@dimen/bitmapSize"
+        android:layout_height="@dimen/bitmapSize"
+        android:scaleType="matrix"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginRight="6dip"
+        android:contentDescription="@string/authors_avatar"
+        tools:src="@mipmap/ic_launcher"
+        />
+
+    <TextView
+        android:id="@android:id/text1"
+        android:textColor="@android:color/black"
+        android:ellipsize="none"
+        android:lines="1"
+        android:paddingLeft="2dp"
+        android:paddingRight="2dp"
+        android:paddingBottom="2dp"
+        android:paddingTop="14dp"
+        android:textSize="16sp"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@android:id/icon"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignWithParentIfMissing="true"
+        android:gravity="left"
+        tools:text="@string/lorem"
+        />
+
+    <TextView
+        android:id="@android:id/text2"
+        android:layout_width="fill_parent"
+        android:layout_height="match_parent"
+        android:paddingLeft="2dp"
+        android:paddingRight="2dp"
+        android:layout_toRightOf="@android:id/icon"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_below="@android:id/text1"
+        android:maxLines="2"
+        android:textSize="12sp"
+        android:lineSpacingMultiplier="0.8"
+        android:breakStrategy="high_quality"
+        android:hyphenationFrequency="full"
+        android:ellipsize="end"
+        android:gravity="left|top"
+        tools:text="@string/lorem"
+        tools:ignore="UnusedAttribute" />
+</RelativeLayout>

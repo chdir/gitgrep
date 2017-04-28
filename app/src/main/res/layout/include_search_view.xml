@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ru.drom.gitgrep.view.SearchLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    tools:ignore="RtlHardcoded"
+    >
+
+    <ImageButton
+        android:id="@+id/inc_search_btn_search"
+        style="@android:style/Widget.DeviceDefault.Button.Borderless"
+        android:layout_centerVertical="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:minWidth="7sp"
+        android:src="@drawable/ic_search_white_24dp"
+        android:text="@string/search"
+        android:contentDescription="@string/search"
+        />
+
+    <EditText
+        android:id="@+id/inc_search_et_main"
+        android:background="@null"
+        android:layout_centerVertical="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="textVisiblePassword|textNoSuggestions"
+        android:imeOptions="flagNoFullscreen|actionSearch"
+        android:hint="@string/enter_search_terms"
+        android:layout_toLeftOf="@id/inc_search_btn_search"
+        android:layout_marginTop="16dp"
+        android:layout_marginLeft="4dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginRight="4dp"
+        android:layout_marginEnd="4dp"
+        />
+
+    <requestFocus/>
+</ru.drom.gitgrep.view.SearchLayout>
