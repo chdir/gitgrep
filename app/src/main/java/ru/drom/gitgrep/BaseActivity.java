@@ -73,7 +73,7 @@ public abstract class BaseActivity extends Activity {
 
     @Override
     public void invalidateOptionsMenu() {
-        delegate.invalidateOptionsMenu();
+        getDelegate().invalidateOptionsMenu();
     }
 
     @Override

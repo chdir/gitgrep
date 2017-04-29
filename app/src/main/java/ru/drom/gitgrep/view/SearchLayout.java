@@ -1,11 +1,13 @@
 package ru.drom.gitgrep.view;
 
 import android.content.Context;
+import android.support.v7.view.CollapsibleActionView;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -23,13 +25,14 @@ import ru.drom.gitgrep.util.RxAndroid;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
-public final class SearchLayout extends RelativeLayout implements TextWatcher {
-    private final PublishSubject<?> textChanges = PublishSubject.create();
+public final class SearchLayout extends RelativeLayout implements CollapsibleActionView, TextWatcher {
+    private final PublishSubject<String> textChanges = PublishSubject.create();
     private final PublishSubject<?> explicitInput = PublishSubject.create();
 
     @BindView(R.id.inc_search_et_main)
     EditText editor;
 
+    private InputMethodManager imeMgr;
     private SearchListener searchListener;
 
     public SearchLayout(Context context) {
@@ -54,10 +57,24 @@ public final class SearchLayout extends RelativeLayout implements TextWatcher {
     protected void onFinishInflate() {
         super.onFinishInflate();
 
+        final Context context = getContext();
+
+        imeMgr = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+
         ButterKnife.bind(this);
 
         editor.addTextChangedListener(this);
+    }
 
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+
+        // subscribe to changes only after onRestoreInstanceState is called
+        getHandler().post(this::subscribeToChanges);
+    }
+
+    private void subscribeToChanges() {
         final Observable<?> textHandler = textChanges.debounce(o -> {
             if (editor.getText().length() == 0) {
                 return Observable.empty();
@@ -69,6 +86,7 @@ public final class SearchLayout extends RelativeLayout implements TextWatcher {
         });
 
         textHandler
+                .distinctUntilChanged()
                 .compose(RxLifecycle.bindView(this))
                 .subscribe(next -> doSearch());
     }
@@ -109,7 +127,21 @@ public final class SearchLayout extends RelativeLayout implements TextWatcher {
 
     @Override
     public void afterTextChanged(Editable s) {
-        textChanges.onNext(null);
+        textChanges.onNext(s.toString());
+    }
+
+    @Override
+    public void onActionViewExpanded() {
+        editor.requestFocus();
+
+        imeMgr.showSoftInput(editor, 0);
+    }
+
+    @Override
+    public void onActionViewCollapsed() {
+        if (isAttachedToWindow() && editor.isInputMethodTarget()) {
+            imeMgr.hideSoftInputFromWindow(editor.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+        }
     }
 
     public interface SearchListener {

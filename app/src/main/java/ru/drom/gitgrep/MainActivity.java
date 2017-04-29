@@ -9,7 +9,6 @@ import android.content.res.Resources;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.v4.view.MenuItemCompat;
 import android.support.v7.widget.RecyclerView;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -37,7 +36,7 @@ import rx.subjects.PublishSubject;
 import static ru.drom.gitgrep.service.GithubAuthenticator.GITGREP_ACCOUNT_TYPE;
 import static ru.drom.gitgrep.service.GithubAuthenticator.AUTH_TOKEN_ANY;
 
-public final class MainActivity extends BaseActivity implements SearchLayout.SearchListener, MenuItemCompat.OnActionExpandListener {
+public final class MainActivity extends BaseActivity implements SearchLayout.SearchListener {
     private static final String TAG = "MainActivity";
 
     private PublishSubject<ActivityEvent> lifecycle;
@@ -47,8 +46,6 @@ public final class MainActivity extends BaseActivity implements SearchLayout.Sea
     @BindView(R.id.act_main_list)
     RecyclerView searchesList;
 
-    boolean ready;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -56,6 +53,9 @@ public final class MainActivity extends BaseActivity implements SearchLayout.Sea
         setContentView(R.layout.act_main);
 
         ButterKnife.bind(this);
+
+        searchesList.setLayoutManager(new SearchLayoutManager(this));
+        searchesList.addItemDecoration(new SaneDecor(this, LinearLayout.VERTICAL));
 
         appContext = getApplication();
 
@@ -74,7 +74,11 @@ public final class MainActivity extends BaseActivity implements SearchLayout.Sea
             state.bitmapCaches = new Bitmaps(res);
         }
 
-        ensureAuthenticated();
+        if (!state.ready) {
+            ensureAuthenticated();
+        } else {
+            proceedWithStartup(state.account);
+        }
     }
 
     private void ensureAuthenticated() {
@@ -85,16 +89,23 @@ public final class MainActivity extends BaseActivity implements SearchLayout.Sea
                 .subscribe(this::proceedWithStartup, this::handleSignInError);
     }
 
-    private void proceedWithStartup(Account account) {
+    private void proceedWithStartup(Account unused) {
         assert searchesList != null;
 
-        ready = true;
+        state.ready = true;
+        state.account = unused;
 
-        searchesList.setLayoutManager(new SearchLayoutManager(this));
-        searchesList.addItemDecoration(new SaneDecor(this, LinearLayout.VERTICAL));
         searchesList.setAdapter(state.listAdapter);
 
         invalidateOptionsMenu();
+    }
+
+    private Bundle savedInstanceState;
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        // postpone View state restoration until the action bar menu is fully initialized
+        this.savedInstanceState = savedInstanceState;
     }
 
     @Override
@@ -103,11 +114,14 @@ public final class MainActivity extends BaseActivity implements SearchLayout.Sea
 
         final MenuItem searchItem = menu.findItem(R.id.menu_main_search);
 
-        MenuItemCompat.setOnActionExpandListener(searchItem, this);
-
         final SearchLayout searchView = (SearchLayout) searchItem.getActionView();
 
         searchView.setSearchListener(this);
+
+        if (savedInstanceState != null) {
+            super.onRestoreInstanceState(savedInstanceState);
+            savedInstanceState = null;
+        }
 
         return super.onCreateOptionsMenu(menu);
     }
@@ -116,7 +130,7 @@ public final class MainActivity extends BaseActivity implements SearchLayout.Sea
     public boolean onPrepareOptionsMenu(Menu menu) {
         final MenuItem searchItem = menu.findItem(R.id.menu_main_search);
 
-        searchItem.setEnabled(ready);
+        searchItem.setEnabled(state.ready);
 
         final MenuItem logout = menu.findItem(R.id.menu_main_logout);
         final MenuItem login = menu.findItem(R.id.menu_main_login);
@@ -235,21 +249,11 @@ public final class MainActivity extends BaseActivity implements SearchLayout.Sea
         }
     }
 
-    @Override
-    public boolean onMenuItemActionExpand(MenuItem item) {
-        item.getActionView().requestFocus();
-
-        return true;
-    }
-
-    @Override
-    public boolean onMenuItemActionCollapse(MenuItem item) {
-        return true;
-    }
-
     private static class State {
         SearchAdapter listAdapter;
         Bitmaps bitmapCaches;
+        Account account;
+        boolean ready;
     }
 
     private static final class RowFetcher extends ContextWrapper implements SearchAdapter.RowFetcher, Callable<RepositoryResults> {

@@ -72,7 +72,7 @@ public final class Bitmaps {
 
             connection.setRequestProperty("User-Agent", "GitGrep");
             connection.setConnectTimeout(5000);
-            connection.setReadTimeout(3000);
+            connection.setReadTimeout(5000);
             connection.setUseCaches(true);
 
             try (InputStream stream = connection.getInputStream()) {

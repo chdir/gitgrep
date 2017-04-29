@@ -37,7 +37,7 @@ public final class AuthRequestInterceptor extends AbstractRequestInterceptor imp
         final ParamConfig authHeader = newParamConfig(String.class)
                 .forHeader()
                 .setName("Authorization")
-                .setDefaultValue(token.getName() + ' ' + "lalalalal" +  token.getValue())
+                .setDefaultValue(token.getName() + ' ' +  token.getValue())
                 .build();
 
         requestBuilder.addParam(authHeader);

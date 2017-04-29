@@ -29,6 +29,7 @@
         android:layout_height="wrap_content"
         android:inputType="textVisiblePassword|textNoSuggestions"
         android:imeOptions="flagNoFullscreen|actionSearch"
+        android:maxLines="1"
         android:hint="@string/enter_search_terms"
         android:layout_toLeftOf="@id/inc_search_btn_search"
         android:layout_marginTop="16dp"
