@@ -2,6 +2,7 @@
 <menu xmlns:tools="http://schemas.android.com/tools"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:context="ru.drom.gitgrep.MainActivity"
     tools:ignore="AlwaysShowAction">
     <item
         android:id="@+id/menu_main_search"
@@ -11,6 +12,7 @@
         android:showAsAction="always|collapseActionView"
         app:actionLayout="@layout/include_search_view"
         app:showAsAction="always|collapseActionView"
+        tools:ignore="AppCompatResource"
         />
 
     <item

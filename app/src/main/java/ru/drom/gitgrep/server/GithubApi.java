@@ -7,7 +7,6 @@ import org.codegist.crest.annotate.SocketTimeout;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 
 @SocketTimeout(10000)
@@ -21,7 +20,9 @@ public interface GithubApi {
     @GET
     @Produces("application/vnd.github.mercy-preview+json")
     @Path("/search/repositories")
-    RepositoryResults getRepositories(@QueryParam("q") String query, @QueryParam("page") int page, @QueryParam("per_page") int perPage);
+    RepositoryResults getRepositories(@QueryParam("q") String query,
+                                      @QueryParam("page") int page,
+                                      @QueryParam("per_page") int perPage) throws AuthFailedException;
 
 
 }

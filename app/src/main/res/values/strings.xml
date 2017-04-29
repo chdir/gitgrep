@@ -14,4 +14,9 @@
     <string name="enter_token">Токен/пароль</string>
     <string name="auth_err_app_banned">Авторизация по паролю временно недоступна, пожалуйста используйте другие опции</string>
     <string name="auth_err_unknown">Ошибка авторизации (подробности добавлены в LogCat)</string>
+    <string name="search_err">Ошибка при поиске</string>
+    <string name="search_err_access">Ошибка авторизации</string>
+    <string name="netowrk_err">Ошибка подключения к сети</string>
+    <string name="throttle_err">Превышен лимит на число запросов</string>
+    <string name="http_err">Ошибка при поиске (код %d)</string>
 </resources>

@@ -23,6 +23,7 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocketFactory;
 
 import ru.drom.gitgrep.server.AuthRequestInterceptor;
+import ru.drom.gitgrep.server.ErrorCodeHandler;
 import ru.drom.gitgrep.server.GithubApi;
 import ru.drom.gitgrep.server.GithubBaseApi;
 import ru.drom.gitgrep.server.LoganDecoder;
@@ -76,6 +77,7 @@ public final class GitGrepApp extends Application {
         final CRest crest = new CRestBuilder()
                 .endpoint("https://api.github.com")
                 .property(CREST_CONTEXT, this)
+                .property(MethodConfig.METHOD_CONFIG_DEFAULT_ERROR_HANDLER, ErrorCodeHandler.class)
                 .property(MethodConfig.METHOD_CONFIG_DEFAULT_REQUEST_INTERCEPTOR, AuthRequestInterceptor.class)
                 .property(Authorization.class.getName(), GithubAuth.getInstance(this))
                 .deserializeJsonWith(LoganDecoder.class)

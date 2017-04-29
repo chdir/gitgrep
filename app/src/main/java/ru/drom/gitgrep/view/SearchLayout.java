@@ -26,8 +26,8 @@ import rx.Observable;
 import rx.subjects.PublishSubject;
 
 public final class SearchLayout extends RelativeLayout implements CollapsibleActionView, TextWatcher {
-    private final PublishSubject<String> textChanges = PublishSubject.create();
-    private final PublishSubject<?> explicitInput = PublishSubject.create();
+    private PublishSubject<String> textChanges;
+    private PublishSubject<?> explicitInput;
 
     @BindView(R.id.inc_search_et_main)
     EditText editor;
@@ -57,6 +57,11 @@ public final class SearchLayout extends RelativeLayout implements CollapsibleAct
     protected void onFinishInflate() {
         super.onFinishInflate();
 
+        if (!isInEditMode()) {
+            textChanges = PublishSubject.create();
+            explicitInput = PublishSubject.create();
+        }
+
         final Context context = getContext();
 
         imeMgr = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -70,8 +75,10 @@ public final class SearchLayout extends RelativeLayout implements CollapsibleAct
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
 
-        // subscribe to changes only after onRestoreInstanceState is called
-        getHandler().post(this::subscribeToChanges);
+        if (!isInEditMode()) {
+            // subscribe to changes only after onRestoreInstanceState is called
+            getHandler().post(this::subscribeToChanges);
+        }
     }
 
     private void subscribeToChanges() {
@@ -93,10 +100,17 @@ public final class SearchLayout extends RelativeLayout implements CollapsibleAct
 
     @OnEditorAction(R.id.inc_search_et_main)
     boolean editorAction(TextView tv, int actionId, KeyEvent event) {
-        if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_NULL && event.getAction() == KeyEvent.ACTION_DOWN) {
-            search();
+        switch (actionId) {
+            case EditorInfo.IME_NULL:
+                if (event.getAction() != KeyEvent.ACTION_DOWN) {
+                    break;
+                }
 
-            return true;
+                imeMgr.hideSoftInputFromWindow(editor.getWindowToken(), 0);
+            case EditorInfo.IME_ACTION_SEARCH:
+                search();
+
+                return true;
         }
 
         return false;

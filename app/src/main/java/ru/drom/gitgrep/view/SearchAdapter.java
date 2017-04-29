@@ -3,7 +3,6 @@ package ru.drom.gitgrep.view;
 import android.content.Context;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
@@ -28,7 +27,10 @@ import rx.Subscription;
 public final class SearchAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private static final String TAG = "SearchAdapter";
 
-    public static final int PAGE_SIZE = 100;
+    private static final int STATE_EMPTY = 0;
+    private static final int STATE_LOADING = 1;
+    private static final int STATE_LOADED_SOME = 2;
+    private static final int STATE_LOADED_ALL = 3;
 
     private static final int HARD_LIMIT = 1000;
 
@@ -46,7 +48,7 @@ public final class SearchAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
     private LayoutInflater inflater;
     private Bitmaps bitmaps;
 
-    private Context appContext;
+    private int state;
 
     public SearchAdapter() {
         setHasStableIds(true);
@@ -59,7 +61,6 @@ public final class SearchAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         final Context context = parent.getContext();
 
         this.parent = parent;
-        this.appContext = context.getApplicationContext();
         this.bitmaps = Bitmaps.get(context);
         this.inflater = LayoutInflater.from(context);
     }
@@ -101,9 +102,7 @@ public final class SearchAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
                     return;
                 }
 
-                ongoingSearch = fetcher.next()
-                        .finallyDo(() -> ongoingSearch = null)
-                        .subscribe(this::appendResults, this::handleError);
+                triggerSearch();
 
                 break;
             default:
@@ -120,27 +119,37 @@ public final class SearchAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
                     return;
                 }
 
-                final Bitmaps.BitmapHolder cached = bitmaps.getCached(owner.id);
+                final String key = owner.id;
+
+                final Bitmaps.BitmapHolder cached = bitmaps.getCached(key);
 
                 if (cached != null) {
                     holder.setBitmap(cached);
                     return;
                 }
 
-                holder.loading = bitmaps.load(owner.id)
+                holder.loading = bitmaps.load(key)
                         .compose(RxLifecycle.bindView(parent))
-                        .subscribe(holder::setBitmap, err -> handleBitmapError(holder, err));
+                        .subscribe(holder::setBitmap, err -> handleBitmapError(holder, key, err));
         }
     }
 
-    private void handleBitmapError(SearchHolder holder, Throwable t) {
-        // do not visibly show IOException subclasses, since they can occur due to common network errors
-        if (t instanceof IOException) {
-            Log.v(TAG, "Failed to load image: " + t.getClass());
-        } else {
-            holder.showError();
+    private void triggerSearch() {
+        ongoingSearch = fetcher.next()
+                .finallyDo(() -> ongoingSearch = null)
+                .subscribe(this::appendResults, this::handleError);
+    }
 
-            Utils.logError(appContext, t);
+    private void handleBitmapError(SearchHolder holder, String id, Throwable t) {
+        holder.setBitmap(null);
+
+        final String errMsg = "Failed to load image of " + id;
+
+        if (t instanceof IOException) {
+            // these can come in plenty, so don't log stacktrace for them
+            Utils.logError(errMsg);
+        } else {
+            Utils.logError(errMsg, t);
         }
     }
 
@@ -189,15 +198,17 @@ public final class SearchAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
     }
 
     public void setQuery(@Nullable RowFetcher fetcher) {
-        if (ongoingSearch != null) {
-            ongoingSearch.unsubscribe();
-        }
-
         this.fetcher = fetcher;
 
         data.elementsCount = 0;
 
         setCount(fetcher != null ? 1 : 0);
+
+        if (ongoingSearch != null) {
+            ongoingSearch.unsubscribe();
+
+            triggerSearch();
+        }
     }
 
     private void setCount(int count) {
@@ -208,8 +219,6 @@ public final class SearchAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
 
     private void handleError(Throwable throwable) {
         setCount(data.size());
-
-        Utils.logError(parent.getContext(), throwable);
     }
 
     private void appendResults(RepositoryResults newResults) {

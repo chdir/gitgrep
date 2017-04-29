@@ -8,6 +8,7 @@ import android.accounts.NetworkErrorException;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 
 import ru.drom.gitgrep.AppPrefs;
 import ru.drom.gitgrep.AuthActivity;
@@ -59,6 +60,15 @@ public final class GithubAuthenticator extends AbstractAccountAuthenticator {
             // ignore
             return null;
         }
+    }
+
+    @Override
+    public Bundle getAccountRemovalAllowed(AccountAuthenticatorResponse response, Account account) throws NetworkErrorException {
+        final GithubAuth auth = GithubAuth.getInstance(context);
+
+        auth.invalidateToken();
+
+        return super.getAccountRemovalAllowed(response, account);
     }
 
     @Override

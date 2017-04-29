@@ -2,6 +2,8 @@ package ru.drom.gitgrep.util;
 
 import android.content.Context;
 import android.os.Looper;
+import android.support.annotation.Nullable;
+import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -13,6 +15,8 @@ import java.util.GregorianCalendar;
 import rx.functions.Action1;
 
 public final class Utils {
+    private static final String TAG = "GitGrep";
+
     private static final CachedCalendar calendarCache = new CachedCalendar();
 
     private Utils() {}
@@ -50,12 +54,53 @@ public final class Utils {
         }
     }
 
+    public static void logError(String message) {
+        Log.e(TAG, message);
+    }
+
     public static void logError(Context context, Throwable t) {
-        final String msg = t.getClass().getCanonicalName() + ": " + t.getMessage();
+        logError(t);
 
-        Log.e("!!!", msg, t);
+        toast(context, massageIntoSensibleForm(getMessage(t)));
+    }
 
-        toast(context, msg);
+    public static void logError(Throwable t) {
+        logError(getMessage(t), t);
+    }
+
+    public static void logError(String custom, Throwable t) {
+        Log.e(TAG, custom, t);
+    }
+
+    private static String getMessage(Throwable t) {
+        String message = t.getMessage();
+
+        if (message == null) {
+            final Class<?> clazz = t.getClass();
+
+            message = clazz.getCanonicalName();
+
+            if (message == null) {
+                message = clazz.getName();
+            }
+        }
+
+        return message;
+    }
+
+    public static String massageIntoSensibleForm(@Nullable String errText) {
+        // https://stackoverflow.com/questions/21165802
+        final String trimmedText = errText.replaceAll("(?m)(^ *| +(?= |$))", "")
+                .replaceAll("(?m)^$([\r\n]+?)(^$[\r\n]+?^)+", "$1");
+
+        if (!TextUtils.isEmpty(trimmedText)) {
+
+            return trimmedText.length() > 300
+                    ? '…' + trimmedText.substring(trimmedText.length() - 299, trimmedText.length())
+                    : trimmedText;
+        }
+
+        return "Unknown error";
     }
 
     public static void ignore(Object... ignored) {

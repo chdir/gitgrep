@@ -11,4 +11,8 @@
         <item name="android:windowBackground">@android:color/white</item>
     </style>
 
+    <style name="AppTheme.MainActivity">
+        <item name="android:windowTranslucentNavigation">false</item>
+    </style>
+
 </resources>

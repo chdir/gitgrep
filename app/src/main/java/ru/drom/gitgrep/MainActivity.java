@@ -3,12 +3,18 @@ package ru.drom.gitgrep;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.OperationCanceledException;
+import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.ContextWrapper;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.Snackbar;
 import android.support.v7.widget.RecyclerView;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -17,12 +23,12 @@ import android.widget.LinearLayout;
 import com.trello.rxlifecycle.ActivityEvent;
 import com.trello.rxlifecycle.RxLifecycle;
 
-import java.util.concurrent.Callable;
-
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import ru.drom.gitgrep.server.GithubApi;
-import ru.drom.gitgrep.server.RepositoryResults;
+import ru.drom.gitgrep.server.AuthFailedException;
+import ru.drom.gitgrep.server.GithubServerException;
+import ru.drom.gitgrep.server.RowFetcher;
+import ru.drom.gitgrep.service.GithubAuth;
 import ru.drom.gitgrep.service.GithubAuthenticator;
 import ru.drom.gitgrep.util.RxAndroid;
 import ru.drom.gitgrep.util.Utils;
@@ -30,18 +36,25 @@ import ru.drom.gitgrep.view.SaneDecor;
 import ru.drom.gitgrep.view.SearchAdapter;
 import ru.drom.gitgrep.view.SearchLayout;
 import ru.drom.gitgrep.view.SearchLayoutManager;
-import rx.Observable;
 import rx.subjects.PublishSubject;
 
+import static android.net.ConnectivityManager.EXTRA_NO_CONNECTIVITY;
 import static ru.drom.gitgrep.service.GithubAuthenticator.GITGREP_ACCOUNT_TYPE;
 import static ru.drom.gitgrep.service.GithubAuthenticator.AUTH_TOKEN_ANY;
 
-public final class MainActivity extends BaseActivity implements SearchLayout.SearchListener {
+public final class MainActivity extends BaseActivity implements SearchLayout.SearchListener, RowFetcher.OnError {
     private static final String TAG = "MainActivity";
+
+    private final SnackbarHandler snackbarHandler = new SnackbarHandler();
 
     private PublishSubject<ActivityEvent> lifecycle;
     private State state;
     private Context appContext;
+    private ConnectivityManager cm;
+    private ConnectivityObserver connObserver;
+
+    @BindView(R.id.act_main_content)
+    CoordinatorLayout contentLayout;
 
     @BindView(R.id.act_main_list)
     RecyclerView searchesList;
@@ -49,6 +62,12 @@ public final class MainActivity extends BaseActivity implements SearchLayout.Sea
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+
+        registerReceiver(
+                connObserver = new ConnectivityObserver(),
+                new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
 
         setContentView(R.layout.act_main);
 
@@ -159,6 +178,10 @@ public final class MainActivity extends BaseActivity implements SearchLayout.Sea
     private void logout() {
         AppPrefs.setAnonymousByChoice(this, false);
 
+        final GithubAuth auth = GithubAuth.getInstance(this);
+
+        auth.invalidateToken();
+
         final AccountManager am = AccountManager.get(this);
 
         final Account[] account = am.getAccountsByType(GithubAuthenticator.GITGREP_ACCOUNT_TYPE);
@@ -193,7 +216,7 @@ public final class MainActivity extends BaseActivity implements SearchLayout.Sea
             proceedWithStartup(null);
         } else {
             if (!(error instanceof OperationCanceledException)) {
-                Utils.logError(this, error);
+                Utils.logError(appContext, error);
             }
 
             finish();
@@ -232,6 +255,14 @@ public final class MainActivity extends BaseActivity implements SearchLayout.Sea
     protected void onDestroy() {
         lifecycle.onNext(ActivityEvent.DESTROY);
 
+        if (connObserver != null) {
+            unregisterReceiver(connObserver);
+        }
+
+        if (rowFetcher != null) {
+            rowFetcher.setErrorHandler(null);
+        }
+
         super.onDestroy();
     }
 
@@ -240,12 +271,108 @@ public final class MainActivity extends BaseActivity implements SearchLayout.Sea
         return state;
     }
 
+    private RowFetcher rowFetcher;
+
     @Override
     public void search(CharSequence query) {
+        if (isFinishing()) {
+            return;
+        }
+
         if (query.length() == 0) {
-            state.listAdapter.setQuery(null);
+            rowFetcher = null;
         } else {
-            state.listAdapter.setQuery(new MainActivity.RowFetcher(appContext, query.toString()));
+            rowFetcher = new RowFetcher(appContext, query.toString());
+            rowFetcher.setErrorHandler(this);
+        }
+
+        state.listAdapter.setQuery(rowFetcher);
+    }
+
+    private Snackbar lastError;
+
+    @Override
+    public void onSuccess() {
+        if (lastError != null) {
+            lastError.dismiss();
+            lastError = null;
+        }
+    }
+
+    @Override
+    public void onError(Throwable throwable) {
+        if (throwable instanceof AuthFailedException) {
+            logout();
+
+            Utils.toast(appContext, getString(R.string.search_err_access));
+
+            return;
+        }
+
+        if (lastError != null) {
+            return;
+        }
+
+        final NetworkInfo ni = cm.getActiveNetworkInfo();
+
+        final Snackbar newError;
+
+        if (ni != null && ni.isConnected()) {
+            final String message;
+
+            if (throwable instanceof GithubServerException) {
+                final int status = ((GithubServerException) throwable).getStatus();
+
+                switch (status) {
+                    case 403:
+                        message = getString(R.string.throttle_err);
+                        break;
+                    default:
+                        message = getString(R.string.http_err, status);
+                }
+            } else {
+                message = getString(R.string.search_err);
+            }
+
+            newError = Snackbar.make(contentLayout, message, Snackbar.LENGTH_LONG);
+        } else {
+            newError = Snackbar.make(contentLayout, R.string.netowrk_err, Snackbar.LENGTH_INDEFINITE);
+        }
+
+        newError.setCallback(snackbarHandler);
+        newError.show();
+    }
+
+    private final class SnackbarHandler extends Snackbar.Callback {
+        @Override
+        public void onShown(Snackbar snackbar) {
+            lastError = snackbar;
+        }
+
+        @Override
+        public void onDismissed(Snackbar snackbar, int event) {
+            if (lastError == snackbar) {
+                lastError = null;
+            }
+        }
+    }
+
+    private final class ConnectivityObserver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.hasExtra(EXTRA_NO_CONNECTIVITY) && intent.getBooleanExtra(EXTRA_NO_CONNECTIVITY, false)) {
+                return;
+            }
+
+            if (state.listAdapter != null) {
+                // retry botched image loading jobs
+                state.listAdapter.notifyDataSetChanged();
+            }
+
+            if (lastError != null) {
+                lastError.dismiss();
+                lastError = null;
+            }
         }
     }
 
@@ -254,32 +381,5 @@ public final class MainActivity extends BaseActivity implements SearchLayout.Sea
         Bitmaps bitmapCaches;
         Account account;
         boolean ready;
-    }
-
-    private static final class RowFetcher extends ContextWrapper implements SearchAdapter.RowFetcher, Callable<RepositoryResults> {
-        private final String searchQuery;
-
-        private int nextPage = 1;
-
-        public RowFetcher(Context base, String searchQuery) {
-            super(base);
-
-            this.searchQuery = searchQuery;
-        }
-
-        @Override
-        public Observable<RepositoryResults> next() {
-            return Observable.fromCallable(this)
-                    .subscribeOn(RxAndroid.bgLooperThread())
-                    .observeOn(RxAndroid.mainThread())
-                    .doOnNext(ok -> nextPage++);
-        }
-
-        @Override
-        public RepositoryResults call() throws Exception {
-            final GithubApi main = (GithubApi) getSystemService(GithubApi.SERVICE_API);
-
-            return main.getRepositories(searchQuery, nextPage, 100);
-        }
     }
 }

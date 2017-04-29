@@ -1,5 +1,7 @@
 package ru.drom.gitgrep.server;
 
+import android.accounts.AuthenticatorException;
+import android.accounts.OperationCanceledException;
 import android.content.Context;
 
 import org.codegist.crest.CRestConfig;
@@ -11,6 +13,10 @@ import org.codegist.crest.interceptor.RequestInterceptor;
 import org.codegist.crest.io.RequestBuilder;
 import org.codegist.crest.security.AuthorizationToken;
 
+import java.io.IOException;
+import java.util.concurrent.CancellationException;
+
+import ru.drom.gitgrep.AppPrefs;
 import ru.drom.gitgrep.GitGrepApp;
 import ru.drom.gitgrep.service.GithubAuth;
 
@@ -28,7 +34,15 @@ public final class AuthRequestInterceptor extends AbstractRequestInterceptor imp
 
     @Override
     public void beforeFire(RequestBuilder requestBuilder, MethodConfig methodConfig, Object[] args) throws Exception {
-        final AuthorizationToken token = auth.authAny();
+        AuthorizationToken token = null;
+
+        try {
+            token = auth.authAny();
+        } catch (AuthenticatorException | IOException | OperationCanceledException authFailed) {
+            if (!AppPrefs.isAnonymousByChoice(context)) {
+                throw new GithubServerException(authFailed, 401);
+            }
+        }
 
         if (token == null) {
             return;

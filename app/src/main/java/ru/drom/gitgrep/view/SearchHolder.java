@@ -24,9 +24,6 @@ public final class SearchHolder extends RecyclerView.ViewHolder {
     @BindView(android.R.id.icon)
     public ImageView image;
 
-    @BindDrawable(R.drawable.ic_error_outline_black_24dp)
-    Drawable errorIcon;
-
     public Bitmaps.BitmapHolder bitmapHolder;
     public Subscription loading;
 
@@ -51,9 +48,5 @@ public final class SearchHolder extends RecyclerView.ViewHolder {
         image.setImageBitmap(loaded.bitmap);
 
         loaded.state |= Bitmaps.BitmapHolder.DRAWN;
-    }
-
-    public void showError() {
-        image.setImageDrawable(errorIcon);
     }
 }

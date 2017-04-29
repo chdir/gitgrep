@@ -66,7 +66,7 @@ public final class GithubAuth extends ContextWrapper implements Authorization {
         final Account[] accounts = am.getAccounts();
 
         if (accounts.length == 0) {
-            return null;
+            throw new AuthenticatorException("No accounts!");
         }
 
         final Account account = accounts[0];
@@ -106,5 +106,9 @@ public final class GithubAuth extends ContextWrapper implements Authorization {
 
     public void setCurrentToken(String type, String token) {
         this.currentToken.set(new AuthorizationToken(type, token));
+    }
+
+    public void invalidateToken() {
+        this.currentToken.set(null);
     }
 }
