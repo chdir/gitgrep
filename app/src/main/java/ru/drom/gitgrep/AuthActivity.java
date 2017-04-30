@@ -11,6 +11,9 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.trello.rxlifecycle.ActivityEvent;
+import com.trello.rxlifecycle.RxLifecycle;
+
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import ru.drom.gitgrep.server.AuthResults;
@@ -22,9 +25,12 @@ import ru.drom.gitgrep.util.RxAndroid;
 import ru.drom.gitgrep.util.Utils;
 import ru.drom.gitgrep.view.PasswordPromptFragment;
 import rx.Observable;
+import rx.subjects.PublishSubject;
 
 public final class AuthActivity extends Activity implements PasswordPromptFragment.CredentialsReceiver {
     private static final String TAG = "AuthActivity";
+
+    private final PublishSubject<ActivityEvent> lifecycle = PublishSubject.create();
 
     private Bundle transport;
     private AccountAuthenticatorResponse response;
@@ -84,15 +90,16 @@ public final class AuthActivity extends Activity implements PasswordPromptFragme
             Observable.fromCallable(() -> login(code))
                     .subscribeOn(RxAndroid.bgLooperThread())
                     .observeOn(RxAndroid.mainThread())
-                    .subscribe(this::returnResult);
+                    .compose(RxLifecycle.bindUntilActivityEvent(lifecycle, ActivityEvent.DESTROY))
+                    .subscribe(this::returnResult, err -> Utils.logError(appContext, err));
 
             return;
         }
 
         final String error = uri.getQueryParameter("error");
 
-        if (!TextUtils.isEmpty(code)) {
-            handleGithubAuthError(uri, code);
+        if (!TextUtils.isEmpty(error)) {
+            handleGithubAuthError(uri, error);
         }
     }
 
@@ -105,6 +112,11 @@ public final class AuthActivity extends Activity implements PasswordPromptFragme
                 finish();
                 break;
             default:
+                final String desc = uri.getQueryParameter("error_description");
+                if (desc != null) {
+                    Log.w(TAG, "Login failed: " + desc);
+                }
+
                 Utils.toast(this, getString(R.string.auth_err_unknown));
         }
     }
@@ -206,5 +218,12 @@ public final class AuthActivity extends Activity implements PasswordPromptFragme
             }
         }
         super.finish();
+    }
+
+    @Override
+    protected void onDestroy() {
+        lifecycle.onNext(ActivityEvent.DESTROY);
+
+        super.onDestroy();
     }
 }
