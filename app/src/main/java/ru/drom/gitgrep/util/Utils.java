@@ -7,8 +7,6 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
 
-import org.codegist.crest.CRestException;
-
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 

@@ -15,6 +15,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.RecyclerView;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -33,6 +34,7 @@ import ru.drom.gitgrep.service.GithubAuthenticator;
 import ru.drom.gitgrep.util.RxAndroid;
 import ru.drom.gitgrep.util.Utils;
 import ru.drom.gitgrep.view.SaneDecor;
+import ru.drom.gitgrep.view.FastScrollingView;
 import ru.drom.gitgrep.view.SearchAdapter;
 import ru.drom.gitgrep.view.SearchLayout;
 import ru.drom.gitgrep.view.SearchLayoutManager;
@@ -52,9 +54,13 @@ public final class MainActivity extends BaseActivity implements SearchLayout.Sea
     private Context appContext;
     private ConnectivityManager cm;
     private ConnectivityObserver connObserver;
+    private RecyclerView.AdapterDataObserver quickScrollObserver;
 
     @BindView(R.id.act_main_content)
     CoordinatorLayout contentLayout;
+
+    @BindView(R.id.act_main_quick_scroll)
+    FastScrollingView quickScroll;
 
     @BindView(R.id.act_main_list)
     RecyclerView searchesList;
@@ -73,8 +79,11 @@ public final class MainActivity extends BaseActivity implements SearchLayout.Sea
 
         ButterKnife.bind(this);
 
-        searchesList.setLayoutManager(new SearchLayoutManager(this));
+        searchesList.setHasFixedSize(true);
+        searchesList.setItemAnimator(new DefaultItemAnimator());
         searchesList.addItemDecoration(new SaneDecor(this, LinearLayout.VERTICAL));
+        searchesList.setLayoutManager(new SearchLayoutManager(this));
+        searchesList.addOnScrollListener(quickScroll.getOnScrollListener());
 
         appContext = getApplication();
 
@@ -87,6 +96,10 @@ public final class MainActivity extends BaseActivity implements SearchLayout.Sea
         } else {
             state = last;
         }
+
+        state.listAdapter.registerAdapterDataObserver(quickScrollObserver = quickScroll.getAdapterDataObserver());
+
+        quickScroll.setRecyclerView(searchesList);
 
         final Resources res = getResources();
         if (state.bitmapCaches == null || !state.bitmapCaches.canReuse(res)) {
@@ -257,6 +270,10 @@ public final class MainActivity extends BaseActivity implements SearchLayout.Sea
 
         if (connObserver != null) {
             unregisterReceiver(connObserver);
+        }
+
+        if (quickScrollObserver != null) {
+            state.listAdapter.unregisterAdapterDataObserver(quickScrollObserver);
         }
 
         if (rowFetcher != null) {

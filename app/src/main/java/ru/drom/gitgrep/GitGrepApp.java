@@ -9,18 +9,11 @@ import android.util.Log;
 
 import org.codegist.crest.CRest;
 import org.codegist.crest.CRestBuilder;
-import org.codegist.crest.CRestConfig;
 import org.codegist.crest.config.MethodConfig;
 import org.codegist.crest.security.Authorization;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
-
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLSocketFactory;
 
 import ru.drom.gitgrep.server.AuthRequestInterceptor;
 import ru.drom.gitgrep.server.ErrorCodeHandler;

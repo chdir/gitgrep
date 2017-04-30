@@ -13,7 +13,18 @@
         android:id="@+id/act_main_list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scrollbars="vertical"
+        android:scrollbars="none"
         tools:listitem="@layout/item_search_result"
         />
+
+    <ru.drom.gitgrep.view.FastScrollingView
+        android:id="@+id/act_main_quick_scroll"
+        android:layout_gravity="right"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="16dp"
+        android:layout_marginTop="16dp"
+        android:clickable="false"
+        />
+
 </android.support.design.widget.CoordinatorLayout>

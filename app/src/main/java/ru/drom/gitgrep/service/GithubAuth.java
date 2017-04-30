@@ -7,12 +7,7 @@ import android.accounts.OperationCanceledException;
 import android.content.Context;
 import android.content.ContextWrapper;
 
-import org.codegist.crest.config.MethodConfig;
 import org.codegist.crest.config.MethodType;
-import org.codegist.crest.config.ParamConfigBuilder;
-import org.codegist.crest.interceptor.AbstractRequestInterceptor;
-import org.codegist.crest.interceptor.RequestInterceptor;
-import org.codegist.crest.io.RequestBuilder;
 import org.codegist.crest.param.EncodedPair;
 import org.codegist.crest.security.Authorization;
 import org.codegist.crest.security.AuthorizationToken;

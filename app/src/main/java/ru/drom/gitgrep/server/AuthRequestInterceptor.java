@@ -7,14 +7,12 @@ import android.content.Context;
 import org.codegist.crest.CRestConfig;
 import org.codegist.crest.config.MethodConfig;
 import org.codegist.crest.config.ParamConfig;
-import org.codegist.crest.config.ParamConfigBuilder;
 import org.codegist.crest.interceptor.AbstractRequestInterceptor;
 import org.codegist.crest.interceptor.RequestInterceptor;
 import org.codegist.crest.io.RequestBuilder;
 import org.codegist.crest.security.AuthorizationToken;
 
 import java.io.IOException;
-import java.util.concurrent.CancellationException;
 
 import ru.drom.gitgrep.AppPrefs;
 import ru.drom.gitgrep.GitGrepApp;

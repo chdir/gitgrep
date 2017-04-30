@@ -15,4 +15,18 @@
         <item name="android:windowTranslucentNavigation">false</item>
     </style>
 
+    <style name="FastScrollerDefault">
+        <item name="rfs_fast_scroller_layout">@layout/include_fast_scroller</item>
+        <item name="rfs_barStyle">@style/FastScrollerDefaultTrack</item>
+        <item name="rfs_handleStyle">@style/FastScrollerDefaultThumb</item>
+    </style>
+
+    <style name="FastScrollerDefaultTrack">
+        <item name="android:background">@drawable/bg_track</item>
+    </style>
+
+    <style name="FastScrollerDefaultThumb">
+        <item name="android:background">@drawable/bg_thumb</item>
+    </style>
+
 </resources>

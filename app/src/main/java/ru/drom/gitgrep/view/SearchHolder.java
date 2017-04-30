@@ -1,18 +1,13 @@
 package ru.drom.gitgrep.view;
 
-import android.graphics.drawable.Drawable;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import butterknife.BindDrawable;
 import butterknife.BindView;
 import ru.drom.gitgrep.Bitmaps;
-import ru.drom.gitgrep.R;
-import rx.Observable;
 import rx.Subscription;
-import rx.functions.Action1;
 
 public final class SearchHolder extends RecyclerView.ViewHolder {
     @BindView(android.R.id.text2)

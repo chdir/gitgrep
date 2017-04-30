@@ -3,4 +3,6 @@
     <item name="req_auth" type="id" />
     <item name="holder_progress" type="id" />
     <item name="holder_default" type="id" />
+    <item name="scroll_bar" type="id" />
+    <item name="scroll_handle" type="id" />
 </resources>
